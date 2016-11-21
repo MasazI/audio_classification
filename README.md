@@ -15,10 +15,15 @@ audio classification is an implementation MLP for audio classification using Ten
 ## save model
 `output/ckpt-N`
 
+## tensorboard
+<img src=https://github.com/MasazI/audio_classification/blob/master/output/debug/tb.png/>
 
 ## audio wave image
+<img src="https://github.com/MasazI/audio_classification/blob/master/output/debug/f1_waveplot.jpg" width="300"/>
+<img src="https://github.com/MasazI/audio_classification/blob/master/output/debug/f2_spec.jpg" width="300"/>
+<img src="https://github.com/MasazI/audio_classification/blob/master/output/debug/f3_logpowerspec.jpg" width="300"/>
 
+---
 
-
-## tensorboard
-
+Copyright (c) 2016 Masahiro Imai
+Released under the MIT license
