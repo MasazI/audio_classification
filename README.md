@@ -25,5 +25,5 @@ audio classification is an implementation MLP for audio classification using Ten
 
 ---
 
-Copyright (c) 2015 Masahiro Imai
+Copyright (c) 2016 Masahiro Imai
 Released under the MIT license
