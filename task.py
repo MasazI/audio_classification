@@ -21,7 +21,7 @@ AUDIO_EXT = "wav"
 AUDIO_NUM = 3
 
 MAX_STEPS = 5000
-training_epochs = 100
+training_epochs = 5
 
 train_data_pickle = 'train.pkl'
 test_data_pickle = 'test.pkl'
@@ -52,10 +52,11 @@ def train():
             test_features = testdata.test_inputs
             test_labels = testdata.test_targets
 
-
+    # TODO change to use train and test
     train_labels = one_hot_encode(train_labels)
     test_labels = one_hot_encode(test_labels)
 
+    # random train and test sets.
     train_test_split = np.random.rand(len(train_features)) < 0.70
     train_x = train_features[train_test_split]
     train_y = train_labels[train_test_split]
@@ -72,9 +73,15 @@ def train():
     # build graph
     logits = model.inference(X, n_dim)
 
+    weights = tf.all_variables()
+    saver = tf.train.Saver(weights)
+
     # create loss
     loss = model.loss(logits, Y)
+    tf.scalar_summary('loss', loss)
+
     accracy = model.accuracy(logits, Y)
+    tf.scalar_summary('test accuracy', accracy)
 
     # train operation
     train_op = model.train_op(loss)
@@ -84,6 +91,10 @@ def train():
 
     # get Session
     sess = tf.Session()
+
+    # sumary merge and writer
+    merged = tf.merge_all_summaries()
+    train_writer = tf.train.SummaryWriter(FLAGS.summaries_dir)
 
     # initialize
     sess.run(init)
@@ -95,22 +106,23 @@ def train():
         print("train samples pred: %s" % t_pred[:30])
         print("train samples target: %s" % t_true[:30])
         print('Train accuracy: ', sess.run(accracy, feed_dict={X: train_x, Y: train_y}))
-
-        start_time = time.time()
-        previous_time = start_time
         for epoch in xrange(training_epochs):
-            logits_val, _, loss_val = sess.run([logits, train_op, loss], feed_dict={X: train_x, Y: train_y})
-        end_time = time.time()
-        dutation = end_time - previous_time
+            summary, logits_val, _, loss_val = sess.run([merged, logits, train_op, loss], feed_dict={X: train_x, Y: train_y})
+        train_writer.add_summary(summary, step)
 
         print("step:%d, loss: %s" % (step, loss_val))
         y_pred = sess.run(tf.argmax(logits, 1), feed_dict={X: test_x})
         y_true = sess.run(tf.argmax(test_y, 1))
         print("test samples pred: %s" % y_pred[:10])
         print("test samples target: %s" % y_true[:10])
-        print('Test accuracy: ', sess.run(accracy, feed_dict={X: test_x, Y: test_y}))
+        accracy_val = sess.run([accracy], feed_dict={X: test_x, Y: test_y})
+        # print('Test accuracy: ', accracy_val)
+        # train_writer.add_summary(accracy_val, step)
         p,r,f,s = precision_recall_fscore_support(y_true, y_pred, average='micro')
         print("F-score: %s" % f)
+
+        if step % 1000 == 0:
+            saver.save(sess, FLAGS.ckpt_dir, global_step=step)
 
 
 def features(sub_dirs):
