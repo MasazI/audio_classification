@@ -16,7 +16,7 @@ audio classification is an implementation MLP for audio classification using Ten
 `output/ckpt-N`
 
 ## tensorboard
-<img src=https://github.com/MasazI/audio_classification/blob/master/output/debug/tb.png/>
+<img src=https://github.com/MasazI/audio_classification/blob/master/output/debug/tb_iter.png/ width="500">
 
 ## audio wave image
 <img src="https://github.com/MasazI/audio_classification/blob/master/output/debug/f1_waveplot.jpg" width="300"/>
