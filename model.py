@@ -6,24 +6,6 @@ from model_parts import *
 fc1_hidden = 280
 fc2_hidden = 300
 
-def inference_org(X, n_dim):
-    n_classes = 10
-    n_hidden_units_one = 280
-    n_hidden_units_two = 300
-    sd = 1 / np.sqrt(n_dim)
-
-    W_1 = tf.Variable(tf.random_normal([n_dim, n_hidden_units_one], mean=0, stddev=sd))
-    b_1 = tf.Variable(tf.random_normal([n_hidden_units_one], mean=0, stddev=sd))
-    h_1 = tf.nn.tanh(tf.matmul(X, W_1) + b_1)
-    W_2 = tf.Variable(tf.random_normal([n_hidden_units_one, n_hidden_units_two], mean=0, stddev=sd))
-    b_2 = tf.Variable(tf.random_normal([n_hidden_units_two], mean=0, stddev=sd))
-    h_2 = tf.nn.sigmoid(tf.matmul(h_1, W_2) + b_2)
-    W = tf.Variable(tf.random_normal([n_hidden_units_two,  FLAGS.num_classes], mean=0, stddev=sd))
-    b = tf.Variable(tf.random_normal([ FLAGS.num_classes], mean=0, stddev=sd))
-    y_ = tf.nn.softmax(tf.matmul(h_2, W) + b)
-
-    return y_
-
 def inference(inputs, n_dim, reuse=False, trainable=True):
     # scope_name, inputs, shape, bias_shape=None, reuse=False, trainable=True
     fc1_output = fc_tanh("fc1", inputs, [n_dim, fc1_hidden], [fc1_hidden], reuse, trainable)

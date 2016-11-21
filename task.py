@@ -70,7 +70,7 @@ def train():
     X = tf.placeholder(tf.float32, [None, n_dim])
     Y = tf.placeholder(tf.float32, [None, FLAGS.num_classes])
     # build graph
-    logits = model.inference_org(X, n_dim)
+    logits = model.inference(X, n_dim)
 
     # create loss
     loss = model.loss(logits, Y)
