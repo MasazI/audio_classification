@@ -5,6 +5,7 @@ import numpy as np
 import glob
 import util
 
+TRAIN_DATA_RATIO = 10
 
 def extract_feature(file_name):
     X, sample_rate = librosa.load(file_name)
@@ -34,16 +35,18 @@ def parse_audio_files(parent_dir,sub_dirs,file_ext='*.wav'):
     for label, sub_dir in enumerate(sub_dirs):
         print("label: %s" % (label))
         print("sub_dir: %s" % (sub_dir))
-        for fn in glob.glob(os.path.join(parent_dir, sub_dir, file_ext)):
+        for i, fn in enumerate(glob.glob(os.path.join(parent_dir, sub_dir, file_ext))):
+            if i % TRAIN_DATA_RATIO != 0:
+                continue
             label = labeld_dict[fn]
             if label == 2:
                 continue
-            print("extract file: %s" % (fn))
-            try:
-                util.print_wave_info(fn)
-            except Exception as e:
-                print("[Error] unhandle audio file. %s" % (e))
-                continue
+            print("%d: extract file: %s" % (i, fn))
+            # try:
+            #     util.print_wave_info(fn)
+            # except Exception as e:
+            #     print("[Error] unhandle audio file. %s" % (e))
+            #     continue
             try:
                 mfccs, chroma, mel, contrast = extract_feature(fn)
             except Exception as e:

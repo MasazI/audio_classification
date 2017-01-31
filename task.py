@@ -54,7 +54,7 @@ def train():
 
     # TODO change to use train and test
     train_labels = one_hot_encode(train_labels)
-    test_labels = one_hot_encode(test_labels)
+    #test_labels = one_hot_encode(test_labels)
 
     # random train and test sets.
     train_test_split = np.random.rand(len(train_features)) < 0.70
