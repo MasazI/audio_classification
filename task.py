@@ -15,7 +15,7 @@ import pickle
 import settings
 FLAGS = settings.FLAGS
 
-DATA_HOME = "output/data/UrbanSound8K/audio"
+DATA_HOME = "/mnt/images/radio_data/zenkyoku"
 DEBUG_DIR = "output/debug"
 AUDIO_EXT = "wav"
 AUDIO_NUM = 3
@@ -29,7 +29,7 @@ test_data_pickle = 'test.pkl'
 def train():
     if not os.path.isfile(train_data_pickle):
         # trainig data
-        train_features, train_labels = features(['fold0', 'fold1', 'fold2'])
+        train_features, train_labels = features(["802", "AlphaStation", "fmcocolo", "FMKOBE", "InterFM", "TFM"])
         traindata = TrainData(train_features, train_labels)
         with open(train_data_pickle, mode='wb') as f:
             pickle.dump(traindata, f)
@@ -58,6 +58,7 @@ def train():
 
     # random train and test sets.
     train_test_split = np.random.rand(len(train_features)) < 0.70
+    # train:test = 7:3
     train_x = train_features[train_test_split]
     train_y = train_labels[train_test_split]
     test_x = train_features[~train_test_split]
@@ -142,14 +143,15 @@ def disp_data(names, files):
 if __name__ == '__main__':
     print("DATA_HOME: %s" % (DATA_HOME))
 
-    waves, names = dataset.get_files("fold1")
-    for wave in waves:
-        print("="*10)
-        print("file: %s" % wave)
-        print_wave_info(wave)
-
-    raw_waves = raw_sounds = load_sound_files(waves)
-    disp_data(names, raw_waves)
+    # waves, names = dataset.get_files("802")
+    # for wave in waves:
+    #     print("="*10)
+    #     print("file: %s" % wave)
+    #     print_wave_info(wave)
+    #     break
+    #
+    # raw_waves = raw_sounds = load_sound_files(waves)
+    # disp_data(names, raw_waves)
 
     train()
 
