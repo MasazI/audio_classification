@@ -6,6 +6,7 @@ import glob
 import util
 
 TRAIN_DATA_RATIO = 10
+WINDOW = 512
 
 def extract_feature(file_name):
     X, sample_rate = librosa.load(file_name)
@@ -29,8 +30,8 @@ def windows(data, window_size):
         yield start, start + window_size
         start += (window_size / 2)
 
-def extract_cnn_feature(file_name, bands=60, frames=41):
-    window_size=512*(frames-1)
+def extract_cnn_feature(file_name, label, bands=60, frames=41):
+    window_size=WINDOW*(frames-1)
     log_specgrams = []
     labels = []
     X, sample_rate = librosa.load(file_name)
@@ -41,7 +42,8 @@ def extract_cnn_feature(file_name, bands=60, frames=41):
             logspec = librosa.logamplitude(melspec)
             logspec = logspec.T.flatten()[:, np.newaxis].T
             log_specgrams.append(logspec)
-
+            labels.append(label)
+    return log_specgrams, labels
 
 
 def parse_audio_files(parent_dir,sub_dirs,file_ext='*.wav'):
@@ -75,6 +77,48 @@ def parse_audio_files(parent_dir,sub_dirs,file_ext='*.wav'):
             ext_features = np.hstack([mfccs,chroma,mel,contrast])
             features = np.vstack([features,ext_features])
             labels = np.append(labels, label)
+    return np.array(features), np.array(labels, dtype = np.int)
+
+
+def parse_audio_files_cnn(parent_dir,sub_dirs,file_ext='*.wav'):
+    # file load
+    labeld_dict = {}
+    with open('all_labeled_data.csv', 'r') as f:
+        for line in f:
+            file_label = line.split(",")
+            labeld_dict[file_label[0]] = int(file_label[1])
+    bands = 60
+    frames = 40
+    window_size = WINDOW * (frames - 1)
+    log_specgrams = []
+    labels = []
+
+    for label, sub_dir in enumerate(sub_dirs):
+        print("label: %s" % (label))
+        print("sub_dir: %s" % (sub_dir))
+        for i, fn in enumerate(glob.glob(os.path.join(parent_dir, sub_dir, file_ext))):
+            if i % TRAIN_DATA_RATIO != 0:
+                continue
+            label = labeld_dict[fn]
+            if label == 2:
+                continue
+            print("%d: extract file: %s" % (i, fn))
+
+            X, sample_rate = librosa.load(fn)
+            for (start, end) in windows(X, window_size):
+                if (len(X[start:end]) == window_size):
+                    signal = X[start:end]
+                    melspec = librosa.feature.melspectrogram(signal, n_mels=bands)
+                    logspec = librosa.logamplitude(melspec)
+                    logspec = logspec.T.flatten()[:, np.newaxis].T
+                    log_specgrams.append(logspec)
+                    labels.append(label)
+    log_specgrams = np.asarray(log_specgrams).reshape(len(log_specgrams), bands, frames, 1)
+    features = np.concatenate((log_specgrams, np.zeros(np.shape(log_specgrams))), axis=3)
+
+    for i in range(len(features)):
+        features[i, :, :, 1] = librosa.feature.delta(features[i, :, :, 0])
+
     return np.array(features), np.array(labels, dtype = np.int)
 
 
