@@ -23,6 +23,26 @@ def extract_feature(file_name):
 
     return mfccs,chroma,mel,contrast
 
+def windows(data, window_size):
+    start = 0
+    while start < len(data):
+        yield start, start + window_size
+        start += (window_size / 2)
+
+def extract_cnn_feature(file_name, bands=60, frames=41):
+    window_size=512*(frames-1)
+    log_specgrams = []
+    labels = []
+    X, sample_rate = librosa.load(file_name)
+    for (start,end) in windows(X, window_size):
+        if(len(X[start:end]) == window_size):
+            signal = X[start:end]
+            melspec = librosa.feature.melspectrogram(signal, n_mels=bands)
+            logspec = librosa.logamplitude(melspec)
+            logspec = logspec.T.flatten()[:, np.newaxis].T
+            log_specgrams.append(logspec)
+
+
 
 def parse_audio_files(parent_dir,sub_dirs,file_ext='*.wav'):
     # file load
