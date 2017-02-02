@@ -4,11 +4,13 @@ from util import *
 from features import *
 import numpy as np
 import dataset
+import random
 from dataset import TrainData
 from dataset import TestData
 import time
 import model
 import tensorflow as tf
+from tensorflow.python.platform import gfile
 from sklearn.metrics import precision_recall_fscore_support
 import pickle
 # settings
@@ -69,11 +71,16 @@ def train():
     test_x = train_features[~train_test_split]
     test_y = train_labels[~train_test_split]
 
+    print("train_x shape: ", train_x.shape)
+    x_batches = np.array_split(train_x, 100)
+    print("x_batches shape: ", np.array(x_batches).shape)
+    print("x_batches[0] shape: ", np.array(x_batches)[0].shape)
 
     n_dim = train_features.shape[1]
     print("input dim: %s" % (n_dim))
 
     # create placeholder
+    keep_prob = tf.placeholder(tf.float32)
     if CNN:
         X = tf.placeholder(tf.float32, [None, BANDS, FRAMES, NUM_INPUT_CHANNELS])
         Y = tf.placeholder(tf.float32, [None, FLAGS.num_classes])
@@ -82,7 +89,7 @@ def train():
         Y = tf.placeholder(tf.float32, [None, FLAGS.num_classes])
     # build graph
     if CNN:
-        logits = model.cnn_s(X)
+        logits = model.cnn_s(X, keep_prob=keep_prob)
     else:
         logits = model.inference(X, n_dim)
 
@@ -112,32 +119,47 @@ def train():
     # initialize
     sess.run(init)
 
+    print("train_x shape: ", train_x.shape)
+    x_batches = np.array_split(train_x, 1000)
+    print("x_batches shape: ", np.array(x_batches[0]).shape)
+    y_batches = np.array_split(train_y, 1000)
+
+    print("train_x shape: ", test_x.shape)
+    test_x_batches = np.array_split(test_x, 1000)
+    print("x_batches shape: ", np.array(test_x_batches[0]).shape)
+    test_y_batches = np.array_split(test_y, 1000)
     for step in xrange(MAX_STEPS):
-        t_pred = sess.run(tf.argmax(logits, 1), feed_dict={X: train_features})
-        t_true = sess.run(tf.argmax(train_labels, 1))
-        print("train samples pred: %s" % t_pred[:30])
-        print("train samples target: %s" % t_true[:30])
-        print('Train accuracy: ', sess.run(accracy, feed_dict={X: train_x, Y: train_y}))
-
+        # TODO shuffle batches
         # create batch
-        x_batches = np.array_split(train_x, 100)
-        y_batches = np.array_split(train_y, 100)
-        for x_batch, y_batch in zip(x_batches, y_batches):
-            summary, logits_val, _, loss_val = sess.run([merged, logits, train_op, loss], feed_dict={X: train_x, Y: train_y})
-        train_writer.add_summary(summary, step)
+        for i, (x_batch, y_batch) in enumerate(zip(x_batches, y_batches)):
+            summary, logits_val, _, loss_val = sess.run([merged, logits, train_op, loss], feed_dict={X: np.array(x_batch), Y: np.array(y_batch), keep_prob: 0.5})
 
+            if i % 100 == 0:
+                t_pred = sess.run(tf.argmax(logits, 1), feed_dict={X: np.array(x_batch), keep_prob: 0.5})
+                t_true = sess.run(tf.argmax(np.array(y_batch), 1))
+                print("train samples pred: %s" % t_pred[:30])
+                print("train samples target: %s" % t_true[:30])
+                print('Train accuracy: ', sess.run(accracy, feed_dict={X: np.array(x_batch), Y: np.array(y_batch), keep_prob: 0.5}))
+
+        train_writer.add_summary(summary, step)
         print("step:%d, loss: %s" % (step, loss_val))
-        y_pred = sess.run(tf.argmax(logits, 1), feed_dict={X: test_x})
-        y_true = sess.run(tf.argmax(test_y, 1))
+
+        # choice random number of test batches
+        test_rand = random.randint(0, len(test_x_batches))
+
+        y_pred = sess.run(tf.argmax(logits, 1), feed_dict={X: np.array(test_x_batches[test_rand]), keep_prob: 1.0})
+        y_true = sess.run(tf.argmax(np.array(test_y_batches[test_rand]), 1))
         print("test samples pred: %s" % y_pred[:10])
         print("test samples target: %s" % y_true[:10])
-        accracy_val = sess.run([accracy], feed_dict={X: test_x, Y: test_y})
-        # print('Test accuracy: ', accracy_val)
-        # train_writer.add_summary(accracy_val, step)
+        accracy_val = sess.run([accracy], feed_dict={X: np.array(test_x_batches[test_rand]), Y: np.array(test_y_batches[test_rand]), keep_prob: 1.0})
+        print('Test accuracy: ', accracy_val)
+        #train_writer.add_summary(accracy_val, step)
         p,r,f,s = precision_recall_fscore_support(y_true, y_pred, average='micro')
         print("F-score: %s" % f)
 
         if step % 1000 == 0:
+            if not gfile.Exists(FLAGS.ckpt_dir):
+                gfile.MakeDirs(FLAGS.ckpt_dir)
             saver.save(sess, os.path.join(FLAGS.ckpt_dir, train_data_pickle), global_step=step)
 
 
