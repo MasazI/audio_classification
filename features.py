@@ -74,6 +74,8 @@ def parse_audio_files_cnn(parent_dir,sub_dirs,bands=60,frames=41,file_ext='*.wav
             labeld_dict[file_label[0]] = int(file_label[1])
     window_size = WINDOW * (frames - 1)
     log_specgrams = []
+    log_Shs = []
+    log_Sps = []
     labels = []
     fns = []
 
@@ -88,11 +90,38 @@ def parse_audio_files_cnn(parent_dir,sub_dirs,bands=60,frames=41,file_ext='*.wav
                 continue
             print("%d: extract file: %s" % (i, fn))
 
+            # load audio data
             X, sample_rate = librosa.load(fn)
+
+            # filter
+
+
             for (start, end) in windows(X, window_size):
                 if (len(X[start:end]) == window_size):
                     signal = X[start:end]
-                    melspec = librosa.feature.melspectrogram(signal, n_mels=bands)
+                    melspec = librosa.feature.melspectrogram(signal, n_mels=bands, sr=sample_rate)
+
+                    y_harmonic, y_percussive = librosa.effects.hpss(signal)
+
+                    S_harmonic = librosa.feature.melspectrogram(y_harmonic, n_mels=bands, sr=sample_rate)
+                    S_percussive = librosa.feature.melspectrogram(y_percussive, n_mels=bands, sr=sample_rate)
+
+                    log_Sh = librosa.logamplitude(S_harmonic, ref_power=np.max)
+                    log_Sp = librosa.logamplitude(S_percussive, ref_power=np.max)
+                    if verbose:
+                        print("print")
+                        print("log_Sh shape:", log_Sh.shape)
+                        librosa.display.specshow(log_Sh, x_axis='time')
+                        plt.colorbar()
+                        plt.title('log_Sh')
+                        plt.tight_layout()
+                        plt.show()
+                        print("log_Sp shape:", log_Sp.shape)
+                        librosa.display.specshow(log_Sp, x_axis='time')
+                        plt.colorbar()
+                        plt.title('log_Sp')
+                        plt.tight_layout()
+                        plt.show()
 
                     if verbose:
                         print("print")
@@ -122,12 +151,18 @@ def parse_audio_files_cnn(parent_dir,sub_dirs,bands=60,frames=41,file_ext='*.wav
                     #logspec = logspec.T.flatten()[:, np.newaxis].T
                     # print("logspec flatten shape", logspec.shape)
                     log_specgrams.append(logspec)
+                    log_Shs.append(log_Sh)
+                    log_Sps.append(log_Sp)
                     labels.append(label)
                     fns.append(fn)
     print("log_specgrams shape: %s" % len(log_specgrams))
     log_specgrams = np.asarray(log_specgrams).reshape(len(log_specgrams), bands, frames, 1)
+    log_Shs = np.asarray(log_Shs).reshape(len(log_Shs), bands, frames, 1)
+    log_Sps = np.asarray(log_Sps).reshape(len(log_Sps), bands, frames, 1)
     print("log_specgrams re-shape: ", log_specgrams.shape)
-    features = np.concatenate((log_specgrams, np.zeros(np.shape(log_specgrams))), axis=3)
+    print("log_Shs re-shape: ", log_Shs.shape)
+    print("log_Sps re-shape: ", log_Sps.shape)
+    features = np.concatenate((log_specgrams, np.zeros(np.shape(log_specgrams)), log_Shs, log_Sps), axis=3)
     print("features shape: ", features.shape)
 
     for i in range(len(features)):
