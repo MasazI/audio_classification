@@ -66,13 +66,14 @@ def fc_sigmmoid(scope_name, inputs, shape, bias_shape=None, reuse=False, trainab
             wd=0.04,
             trainable=trainable
         )
+        flat = tf.reshape(inputs, [-1, shape[0]])
         if batchn:
-            fc = tf.matmul(inputs, weights)
+            fc = tf.matmul(flat, weights)
             bn = batch_norm(fc)
             fc = tf.nn.sigmoid(bn, name=scope.name)
         else:
             biases = _variable_on_gpu('biases', bias_shape, tf.constant_initializer(0.1))
-            fc = tf.nn.sigmoid(tf.matmul(inputs, weights) + biases)
+            fc = tf.nn.sigmoid(tf.matmul(flat, weights) + biases)
         return fc
 
 
@@ -87,13 +88,14 @@ def fc_tanh(scope_name, inputs, shape, bias_shape=None, reuse=False, trainable=T
             wd=0.04,
             trainable=trainable
         )
+        flat = tf.reshape(inputs, [-1, shape[0]])
         if batchn:
-            fc = tf.matmul(inputs, weights)
+            fc = tf.matmul(flat, weights)
             bn = batch_norm(fc)
             fc = tf.nn.tanh(bn, name=scope.name)
         else:
             biases = _variable_on_gpu('biases', bias_shape, tf.constant_initializer(0.1))
-            fc = tf.nn.tanh(tf.matmul(inputs, weights) + biases)
+            fc = tf.nn.tanh(tf.matmul(flat, weights) + biases)
         return fc
 
 
@@ -108,13 +110,14 @@ def fc(scope_name, inputs, shape, bias_shape=None, reuse=False, trainable=True, 
             wd=0.04,
             trainable=trainable
         )
+        flat = tf.reshape(inputs, [-1, shape[0]])
         if batchn:
-            fc = tf.matmul(inputs, weights)
+            fc = tf.matmul(flat, weights)
             bn = batch_norm(fc)
             fc = tf.nn.relu(bn, name=scope.name)
         else:
             biases = _variable_on_gpu('biases', bias_shape, tf.constant_initializer(0.1))
-            fc = tf.nn.relu_layer(inputs, weights, biases, name=scope.name)
+            fc = tf.nn.relu_layer(flat, weights, biases, name=scope.name)
 
         return fc
 

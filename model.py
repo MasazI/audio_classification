@@ -8,7 +8,7 @@ fc2_hidden = 300
 
 conv1_kernel_size = 30
 conv1_input_channel_size = 2
-conv1_filetr_size = 20
+conv1_filter_size = 20
 fc1_hidden = 300
 fc2_hidden = 300
 
@@ -20,10 +20,13 @@ def inference(inputs, n_dim, reuse=False, trainable=True):
     softmax_linear = fc_softmax("softmax", fc2_output, [fc2_hidden, FLAGS.num_classes], [FLAGS.num_classes], reuse, trainable)
     return softmax_linear
 
-def cnn(inputs, reuse=False, trainable=True):
-    conv1 = conv2d('conv1', inputs, [conv1_kernel_size, conv1_kernel_size, conv1_input_channel_size, conv1_filetr_size], padding='SAME', reuse=reuse)
+def cnn_s(inputs, reuse=False, trainable=True):
+    # conv2d(scope_name, inputs, shape, bias_shape, stride, padding='VALID', wd=0.0, reuse=False, trainable=True)
+    conv1 = conv2d('conv1', inputs, [conv1_kernel_size, conv1_kernel_size, conv1_input_channel_size, conv1_filter_size], [conv1_filter_size], [1,1,1,1], padding='SAME', reuse=reuse)
     conv1_shape = conv1.get_shape().as_list()
-    fc1 = fc_sigmmoid('fc1', conv1, [conv1_shape[1]*conv1_shape[2]*conv1_shape[3], fc1_hidden], [fc1_hidden], reuse=reuse)
+    print conv1_shape
+    #fc1 = fc_sigmmoid('fc1', conv1, [conv1_shape[1]*conv1_shape[2]*conv1_shape[3], fc1_hidden], [fc1_hidden], reuse=reuse)
+    fc1 = fc_sigmmoid('fc1', conv1, [60*41*20, fc1_hidden], [fc1_hidden], reuse=reuse)
     softmax_linear = fc_softmax("softmax", fc1, [fc2_hidden, FLAGS.num_classes], [FLAGS.num_classes], reuse, trainable)
     return softmax_linear
 

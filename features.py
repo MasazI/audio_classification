@@ -4,6 +4,7 @@ import librosa
 import numpy as np
 import glob
 import util
+import matplotlib.pyplot as plt
 
 TRAIN_DATA_RATIO = 10
 WINDOW = 512
@@ -30,7 +31,7 @@ def windows(data, window_size):
         yield start, start + window_size
         start += (window_size / 2)
 
-def extract_cnn_feature(file_name, label, bands=60, frames=41):
+def extract_cnn_feature(file_name, label, bands=60, frames=41, verbose=False):
     window_size=WINDOW*(frames-1)
     log_specgrams = []
     labels = []
@@ -39,7 +40,19 @@ def extract_cnn_feature(file_name, label, bands=60, frames=41):
         if(len(X[start:end]) == window_size):
             signal = X[start:end]
             melspec = librosa.feature.melspectrogram(signal, n_mels=bands)
+            if verbose:
+                librosa.display.specshow(melspec, x_axis='time')
+                plt.colorbar()
+                plt.title('MELSPEC')
+                plt.tight_layout()
+
             logspec = librosa.logamplitude(melspec)
+            if verbose:
+                librosa.display.specshow(logspec, x_axis='time')
+                plt.colorbar()
+                plt.title('LOGSPEC')
+                plt.tight_layout()
+
             logspec = logspec.T.flatten()[:, np.newaxis].T
             log_specgrams.append(logspec)
             labels.append(label)
@@ -80,18 +93,17 @@ def parse_audio_files(parent_dir,sub_dirs,file_ext='*.wav'):
     return np.array(features), np.array(labels, dtype = np.int)
 
 
-def parse_audio_files_cnn(parent_dir,sub_dirs,file_ext='*.wav'):
+def parse_audio_files_cnn(parent_dir,sub_dirs,bands=60,frames=41,file_ext='*.wav',verbose=False):
     # file load
     labeld_dict = {}
     with open('all_labeled_data.csv', 'r') as f:
         for line in f:
             file_label = line.split(",")
             labeld_dict[file_label[0]] = int(file_label[1])
-    bands = 60
-    frames = 40
     window_size = WINDOW * (frames - 1)
     log_specgrams = []
     labels = []
+    fns = []
 
     for label, sub_dir in enumerate(sub_dirs):
         print("label: %s" % (label))
@@ -109,17 +121,73 @@ def parse_audio_files_cnn(parent_dir,sub_dirs,file_ext='*.wav'):
                 if (len(X[start:end]) == window_size):
                     signal = X[start:end]
                     melspec = librosa.feature.melspectrogram(signal, n_mels=bands)
+
+                    if verbose:
+                        print("print")
+                        librosa.display.specshow(melspec, x_axis='time')
+                        plt.colorbar()
+                        plt.title('MFCC')
+                        plt.tight_layout()
+                        plt.show()
+
                     logspec = librosa.logamplitude(melspec)
-                    logspec = logspec.T.flatten()[:, np.newaxis].T
+                    if verbose:
+                        print("logspec shape: ", logspec.shape)
+                        librosa.display.specshow(logspec, x_axis='time')
+                        plt.colorbar()
+                        plt.title('LOGSPEC')
+                        plt.tight_layout()
+                        plt.show()
+
+                    delta = librosa.feature.delta(logspec, order=2)
+                    if verbose:
+                        librosa.display.specshow(delta, x_axis='time')
+                        plt.colorbar()
+                        plt.title('DELTA')
+                        plt.tight_layout()
+                        plt.show()
+
+                    #logspec = logspec.T.flatten()[:, np.newaxis].T
+                    # print("logspec flatten shape", logspec.shape)
                     log_specgrams.append(logspec)
                     labels.append(label)
+                    fns.append(fn)
+    print("log_specgrams shape: %s" % len(log_specgrams))
     log_specgrams = np.asarray(log_specgrams).reshape(len(log_specgrams), bands, frames, 1)
+    print("log_specgrams re-shape: ", log_specgrams.shape)
     features = np.concatenate((log_specgrams, np.zeros(np.shape(log_specgrams))), axis=3)
+    print("features shape: ", features.shape)
 
     for i in range(len(features)):
         features[i, :, :, 1] = librosa.feature.delta(features[i, :, :, 0])
+        if verbose:
+            logspec = features[i, :, :, 0]
+            deltaspec = features[i, :, :, 1]
+            print("label: %d" % labels[i])
+            print("fn: %s" % fns[i])
+            print("logspec shape in features: ", logspec.shape)
+            librosa.display.specshow(logspec, x_axis='time')
+            plt.colorbar()
+            plt.title('logspec')
+            plt.tight_layout()
+            plt.show()
+            librosa.display.specshow(deltaspec, x_axis='time')
+            plt.colorbar()
+            plt.title('deltaspec')
+            plt.tight_layout()
+            plt.show()
 
-    return np.array(features), np.array(labels, dtype = np.int)
+    features = np.array(features)
+    labels = np.array(labels, dtype=np.int)
+    tmp = np.concatenate((features.reshape(len(features), -1), labels.reshape(len(labels), -1)), axis=1)
+    np.random.shuffle(tmp)
+
+    features_shuffle = tmp[:, :features.size//len(features)].reshape(features.shape)
+    labels_shuffle = tmp[:, features.size//len(features):].reshape(labels.shape)
+
+    print("features_shuffle shape: ", features_shuffle.shape)
+    print("labels_shuffle shape: ", labels_shuffle.shape)
+    return features_shuffle, np.array(labels_shuffle, dtype=np.int)
 
 
 def one_hot_encode(labels):
