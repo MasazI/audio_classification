@@ -25,13 +25,20 @@ AUDIO_NUM = 3
 MAX_STEPS = 5000
 training_epochs = 1000
 
+VERBOSE = False
+
+TYPE = "hp"
 CNN = True
 BANDS = 60
 FRAMES = 41
-NUM_INPUT_CHANNELS = 2
 
-train_data_pickle = 'train_cnn_b%d_f%d_c%d.pkl' % (BANDS, FRAMES, NUM_INPUT_CHANNELS)
-test_data_pickle = 'test_cnn_b%d_f%d_c%d.pkl' % (BANDS, FRAMES, NUM_INPUT_CHANNELS)
+if TYPE == "normal":
+    NUM_INPUT_CHANNELS = 2
+else:
+    NUM_INPUT_CHANNELS = 4
+
+train_data_pickle = 'train_cnn_b%d_f%d_c%d_%s.pkl' % (BANDS, FRAMES, NUM_INPUT_CHANNELS, TYPE)
+test_data_pickle = 'test_cnn_b%d_f%d_c%d_%s.pkl' % (BANDS, FRAMES, NUM_INPUT_CHANNELS, TYPE)
 
 def train():
     if not os.path.isfile(train_data_pickle):
@@ -174,7 +181,7 @@ def features(sub_dirs):
 def features_cnn(sub_dirs):
     try:
         print("features_cnn")
-        features, labels = parse_audio_files_cnn(DATA_HOME, sub_dirs, bands=BANDS, frames=FRAMES, verbose=False)
+        features, labels = parse_audio_files_cnn(DATA_HOME, sub_dirs, bands=BANDS, frames=FRAMES, verbose=VERBOSE)
     except Exception as e:
         print("[Error] parse error. %s" % e)
     return features, labels
