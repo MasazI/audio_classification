@@ -7,7 +7,7 @@ fc1_hidden = 280
 fc2_hidden = 300
 
 # cnn_s
-conv1_input_channel_size = 2
+conv1_input_channel_size = 4
 conv1_kernel_size = 30
 conv1_filter_size = 20
 fc1_hidden = 300
