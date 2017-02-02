@@ -31,34 +31,6 @@ def windows(data, window_size):
         yield start, start + window_size
         start += (window_size / 2)
 
-def extract_cnn_feature(file_name, label, bands=60, frames=41, verbose=False):
-    window_size=WINDOW*(frames-1)
-    log_specgrams = []
-    labels = []
-    X, sample_rate = librosa.load(file_name)
-    for (start,end) in windows(X, window_size):
-        if(len(X[start:end]) == window_size):
-            signal = X[start:end]
-            melspec = librosa.feature.melspectrogram(signal, n_mels=bands)
-            if verbose:
-                librosa.display.specshow(melspec, x_axis='time')
-                plt.colorbar()
-                plt.title('MELSPEC')
-                plt.tight_layout()
-
-            logspec = librosa.logamplitude(melspec)
-            if verbose:
-                librosa.display.specshow(logspec, x_axis='time')
-                plt.colorbar()
-                plt.title('LOGSPEC')
-                plt.tight_layout()
-
-            logspec = logspec.T.flatten()[:, np.newaxis].T
-            log_specgrams.append(logspec)
-            labels.append(label)
-    return log_specgrams, labels
-
-
 def parse_audio_files(parent_dir,sub_dirs,file_ext='*.wav'):
     # file load
     labeld_dict = {}
